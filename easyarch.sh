@@ -7,7 +7,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # ===== CONFIGURABLE VARIABLES =====
-DISK="/dev/sda"                # Target disk for installation
+DISK="/dev/nvme1n1"                # Target disk for installation
 BOOT_SIZE="1GiB"               # Size of the /boot partition
 ROOT_SIZE="100GiB"             # Size of the root partition
 USERNAME="ioan"                # Default username
@@ -33,27 +33,23 @@ loadkeys "$KEYBOARD_LAYOUT"
 echo "Synchronizing system clock..."
 timedatectl set-ntp true
 
-# Partitioning the disk
-echo "Partitioning the disk $DISK..."
-parted "$DISK" --script mklabel gpt
-parted "$DISK" --script mkpart primary fat32 1MiB "$BOOT_SIZE"
-parted "$DISK" --script set 1 esp on
-parted "$DISK" --script mkpart primary ext4 "$BOOT_SIZE" "$ROOT_SIZE"
-parted "$DISK" --script mkpart primary ext4 "$ROOT_SIZE" 100%
+# Start fdisk and create a new GPT partition table
+# We are automating fdisk commands by passing them in sequence using `echo` and `fdisk`.
+echo -e "g\nn\n\n\n+1G\nt\n1\nn\n\n\n+100G\nn\n\n\n\nw" | fdisk "$DISK"
 
 # Formatting partitions
 echo "Formatting partitions..."
-mkfs.fat -F32 "${DISK}1"
-mkfs.ext4 "${DISK}2"
-mkfs.ext4 "${DISK}3"
+mkfs.fat -F32 "${DISK}p1"
+mkfs.ext4 "${DISK}p2"
+mkfs.ext4 "${DISK}p3"
 
 # Mounting partitions
 echo "Mounting partitions..."
-mount "${DISK}2" /mnt
-mkdir /mnt/boot
-mount "${DISK}1" /mnt/boot
+mount "${DISK}p2" /mnt
+mkdir /mnt/boot/efi
+mount -p "${DISK}p1" /mnt/boot/efi
 mkdir /mnt/home
-mount "${DISK}3" /mnt/home
+mount "${DISK}p3" /mnt/home
 
 # Installing the base system
 echo "Installing the base system..."
@@ -99,12 +95,16 @@ sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 # Installing GRUB
 echo "Installing GRUB..."
 pacman -S --noconfirm grub efibootmgr os-prober dosfstools mtools
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Installing additional packages
 echo "Installing additional packages..."
 pacman -S --noconfirm networkmanager sddm plasma-meta konsole kwrite dolphin ark plasma-workspace egl-wayland partitionmanager kio-admin git nano firefox
+
+# Installing video drivers
+echo "Installing video drivers..."
+pacman -S --noconfirm --needed mesa intel-media-driver mesa-vdpau
 
 # Enabling services
 systemctl enable NetworkManager
