@@ -44,8 +44,8 @@ mkfs.ext4 "${DISK}p3"
 # Mounting partitions
 echo "Mounting partitions..."
 mount "${DISK}p2" /mnt
-mkdir /mnt/boot/efi
-mount -p "${DISK}p1" /mnt/boot/efi
+mkdir -p /mnt/boot/efi
+mount "${DISK}p1" /mnt/boot/efi
 mkdir /mnt/home
 mount "${DISK}p3" /mnt/home
 
