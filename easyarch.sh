@@ -8,8 +8,6 @@ fi
 
 # ===== CONFIGURABLE VARIABLES =====
 DISK="/dev/nvme1n1"                # Target disk for installation
-#BOOT_SIZE="1GiB"               # Size of the /boot partition
-#ROOT_SIZE="100GiB"             # Size of the root partition
 USERNAME="ioan"                # Default username
 USER_PASSWORD="rockstar"       # Password for the user
 ROOT_PASSWORD="rockstar"       # Password for root
