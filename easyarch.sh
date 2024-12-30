@@ -115,5 +115,5 @@ echo "Exiting chroot and unmounting partitions..."
 umount -R /mnt
 
 # Finish installation
-echo "Installation complete! Rebooting..."
-reboot
+#echo "Installation complete! Rebooting..."
+#reboot
